@@ -63,10 +63,10 @@ $addjsonspl = from $basedata | eval all_ips=json_array_to_mv(json_array(dest_ip,
 
 
 // We can export this baseline, to where everyone who needs it can access it for audit purposes, and everyone can pass audit togethger. 
-// export datagrouping as datagrouping
+export datagrouping
 export $final as final
-// export $ipv4 as ipv4
+export ipv4
 export $addjsonspl as addjsonspl
-// export $cleanlookup as cleanlookup
+export cleanlookup
 export $final as USDashboards
 export $basesearch as rbacaudit
