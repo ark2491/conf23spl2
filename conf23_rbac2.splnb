@@ -1,0 +1,36 @@
+import * from ../../../../indexes;
+
+/*
+With this module, we are going to set a base search, then use extended searches and functions to perform 
+RBAC with data based on exporting views to specific apps, where we have custom functions that will 
+present the data correctly to users performing an audit
+*/
+
+// establish a search where we establish constraints based off of region which includes all data
+$addgroups = | search index=botsv3 sourcetype=aws:cloudtrail earliest=-7y latest=now | eval team=case(awsRegion == "us-east-1", "united states",awsRegion == "us-east-2", "united states", awsRegion == "us-west-1", "united states", awsRegion == "us-west-2", "united states", awsRegion == "sa-east-1", "south america", awsRegion == "eu-west-1", "europe", awsRegion == "eu-west-2", "europe", awsRegion == "eu-west-3", "europe", awsRegion == "eu-central-1", "europe", awsRegion == "ca-central-1", "canada", awsRegion == "ap-southeast-1", "asia", awsRegion == "ap-southeast-2", "asia", awsRegion == "ap-south-1", "asia", awsRegion == "ap-northeast-1", "asia", awsRegion == "ap-northeast-2", "asia")
+
+/* With this method, you can see that we can define a range of base searches and export them to other 
+modules as needed, creating a single pain of glass to record our search terms/functions/types
+For this use case, we just want to look at changes made to AWS over time
+*/
+
+$basesearch = | from $addgroups | search tag=change // this is a branch of a base search
+
+// For this example we are going to pick only the US based team, but can be substituted for any of the team names 
+$usTeamBase = | from $basesearch where team="united states" // this method is extending a base search
+
+// We can now establish baseline data formatting for each search.
+// What this function does is, it is set to accept the data source input, and pipe it to the final search terms.
+// When we get to the $final search, it is ready to go and all the groups have the same function for displaying
+// results
+function datagrouping($source): dataset{
+    return 
+    | from $source 
+    | stats count() by command
+}
+
+$final = | from $usTeamBase | datagrouping
+
+// We can export this baseline, to where everyone who needs it can access it for audit purposes, and everyone can pass audit togethger. 
+export $final as USDashboards
+export $basesearch as rbacaudit
